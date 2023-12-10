@@ -1,0 +1,34 @@
+X = {}
+model = Model('Part1_model')
+
+for i in range(1,16):
+    for j in ['X','Y']:
+        for k in range(1,9):
+            X[i,j,k] = model.addVar(vtype = GRB.BINARY,name=f'x_{i}_{j}_{k}')
+
+#Constraints
+#Trains assigned to deport j starts from node k
+for i in range(1,16):
+    model.addConstr(quicksum(X[i,j,k] for k in range(1,9) for j in ['X','Y']) == 1)
+     
+        
+#A route cannot be used more than 3 trains
+for j in ['X','Y']:
+    for k in range(1,9):
+        model.addConstr(quicksum(X[i,j,k] for i in range(1,16)) <= 3)
+        
+#Each depot shpuld have at least 5 trains assigned to it
+for j in ['X','Y']:
+    model.addConstr(quicksum(X[i,j,k] for k in range(1,9) for i in range(1,16)) >= 5)
+        
+#Every train should have only one starting node
+#for k in range(1,9):
+#    model.addConstr(quicksum(X[i,j,k] for i in range(1,16) for j in ['X','Y']) == 1)
+
+
+objective_func = quicksum((1 + odd_even[i - 1, depot_no[j]]) * X[i,j,k] * distances_to_depots[depot_no[j]][paths[i-1]['start']] + 
+                          (1 - odd_even[i - 1, depot_no[j]]) * X[i,j,k] * distances_to_depots[depot_no[j]][paths[i-1]['end']] 
+                          for i in range(1,16) for j in ['X', 'Y'] for k in range(1, 9))
+model.setObjective(objective_func, GRB.MINIMIZE)
+
+model.optimize()
